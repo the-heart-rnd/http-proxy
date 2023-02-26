@@ -1,6 +1,6 @@
 {
   "name": "@thrnd/http-proxy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "./dist/cjs/proxy-framework.app.js",
   "module": "./dist/esm/proxy-framework.app.js",
   "bin": "./dist/cjs/cli/cli.js",
@@ -29,9 +29,11 @@
     "http-proxy": "^1.18.1",
     "json5": "^2.2.3",
     "pino": "^8.8.0",
+    "pino-pretty": "^7.0.0",
     "rambda": "^7.4.0",
     "socks": "^2.7.1",
     "tapable": "^2.2.1",
+    "undici": "^5.16.0",
     "url-join": "^4.0.1",
     "yargs": "^17.5.1"
   },
@@ -58,7 +60,6 @@
     "jest": "^29.3.1",
     "jest-extended": "^3.2.3",
     "nodemon": "^2.0.19",
-    "pino-pretty": "^7.0.0",
     "prettier": "^2.7.1",
     "rimraf": "^4.1.2",
     "socket.io": "^4.5.4",
@@ -67,8 +68,7 @@
     "ts-node": "^10.9.1",
     "ts-patch": "^2.1.0",
     "typescript": "^4.9.5",
-    "typescript-transform-paths": "^3.4.6",
-    "undici": "^5.16.0"
+    "typescript-transform-paths": "^3.4.6"
   },
   "engines": {
     "node": ">= 16.0.0"
