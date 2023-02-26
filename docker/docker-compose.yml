@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  dev-http-proxy:
+    image: "node:18-alpine"
+    command: "npx -y @thrnd/http-proxy -c /opt/http-proxy/rewrites.json"
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ./rewrites.json
+        target: /opt/http-proxy/rewrites.json

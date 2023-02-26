@@ -1,0 +1,12 @@
+src/
+example/
+docker/
+coverage/
+tmp/
+@types/
+.idea
+.eslintrc.js
+.gitignore
+tsconfig.*json
+.prettierrc
+.npmrc

@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/cjs",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+  },
+  "exclude": [
+    "**/*.spec.ts",
+    "node_modules",
+    "dist"
+  ],
+  "include": [
+    "@types",
+    "src/**/*.d.ts"
+  ],
+  "files": [
+    "src/cli/cli.ts",
+    "src/proxy-framework.app.ts"
+  ],
+}
