@@ -4,6 +4,9 @@
   "main": "./dist/cjs/proxy-framework.app.js",
   "module": "./dist/esm/proxy-framework.app.js",
   "bin": "./dist/cjs/cli/cli.js",
+  "repository": {
+    "url": "https://github.com/the-heart-rnd/http-proxy/"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc -b tsconfig.build.json && tsc -b tsconfig.build-esm.json",
