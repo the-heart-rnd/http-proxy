@@ -5,7 +5,6 @@
     "module": "commonjs",
     "target": "ES2021",
     "sourceMap": true,
-    "noEmit": true,
     "declaration": true,
     "strict": true,
     "esModuleInterop": true,
