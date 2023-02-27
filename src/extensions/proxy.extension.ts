@@ -9,5 +9,9 @@ export abstract class ProxyExtension {
     });
   }
 
+  protected contextLogger(context: { logger: pino.Logger }) {
+    return context.logger.child(this.logger.bindings());
+  }
+
   abstract init(server: ProxyFrameworkApp): Promise<void> | void;
 }

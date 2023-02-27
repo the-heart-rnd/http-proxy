@@ -21,11 +21,11 @@ export class RewriteCookieExtension extends ProxyExtension {
     const originalResponseHeaders = context.serviceResponseHeaders;
 
     if (!originalResponseHeaders?.has('set-cookie')) {
-      this.logger.debug('No cookie to rewrite');
+      this.contextLogger(context).debug('No cookie to rewrite');
     } else {
       const targetHost = new URL(context.match.target).hostname;
       const proxyHost = new URL(context.request.url).hostname;
-      this.logger.info(
+      this.contextLogger(context).info(
         'Rewriting cookie from: ' + targetHost + ' to: ' + proxyHost,
       );
       context.serviceResponseHeaders.update('set-cookie', (cookie) =>

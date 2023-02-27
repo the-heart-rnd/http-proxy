@@ -26,6 +26,10 @@ export class CorsExtension extends ProxyExtension {
     context: OnModifyServiceResponseHeaders,
   ): OnModifyServiceResponseHeaders => {
     const corsConfig = this.readConfig(context);
+    if (!corsConfig) {
+      return context;
+    }
+
     const corsHeaders: ResponseHeaders = this.getCORSHeaders(
       context,
       corsConfig,
@@ -33,7 +37,7 @@ export class CorsExtension extends ProxyExtension {
 
     if (corsHeaders.size === 0) return context;
 
-    this.logger.debug({ corsHeaders }, 'Adding CORS headers');
+    this.contextLogger(context).debug({ corsHeaders }, 'Adding CORS headers');
     context.serviceResponseHeaders.assign(corsHeaders);
 
     if (corsConfig.preflight === 'auto' && this.isPreflight(context)) {
@@ -58,7 +62,7 @@ export class CorsExtension extends ProxyExtension {
       case 'referer': {
         const refererHeader = requestHeaders.get('referer');
         if (!refererHeader) {
-          this.logger.info(
+          this.contextLogger(context).info(
             'cors set to "referer" but no referer header found. Falling back to "proxy"',
           );
           return this.getCORSHeaders(context, {
@@ -66,7 +70,7 @@ export class CorsExtension extends ProxyExtension {
             mode: 'proxy',
           });
         } else {
-          this.logger.debug(
+          this.contextLogger(context).debug(
             'Referer header found, setting CORS headers allowed origin to referer',
           );
           corsHeaders.set(
@@ -125,7 +129,7 @@ export class CorsExtension extends ProxyExtension {
     return context.request.method === 'OPTIONS';
   }
 
-  private readConfig(context: OnConfigMatchFound): CorsConfig {
+  private readConfig(context: OnConfigMatchFound): CorsConfig | null {
     let cors = context.match.response?.cors ?? {
       mode: context.match.cors,
       preflight: context.match.preflight,
@@ -133,6 +137,10 @@ export class CorsExtension extends ProxyExtension {
 
     if (typeof cors !== 'object') {
       cors = { mode: cors };
+    }
+
+    if (cors.mode === undefined && cors.preflight === undefined) {
+      return null;
     }
 
     const { mode = 'referer', preflight = 'auto' } = cors;
@@ -143,6 +151,10 @@ export class CorsExtension extends ProxyExtension {
     context: OnServiceCall,
   ): OnPostServiceCall | undefined => {
     const config = this.readConfig(context);
+    if (!config) {
+      return;
+    }
+
     if (config.preflight === true && this.isPreflight(context)) {
       const corsHeaders = this.getCORSHeaders(context, config);
       return {

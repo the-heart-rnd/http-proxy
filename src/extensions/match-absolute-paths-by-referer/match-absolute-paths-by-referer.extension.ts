@@ -25,21 +25,42 @@ export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
     if (!refererHeader || context.request.isRebasing) return undefined;
 
     const refererPathName = new URL(refererHeader).pathname;
+
+    context.logger.info(
+      {
+        refererHeader,
+      },
+      'Trying to match path by referer',
+    );
+
+    const request = {
+      ...context.request,
+      isRebasing: true,
+      url: refererHeader,
+      path: refererPathName,
+    };
+
+    const logger = this.contextLogger(context).child({
+      request: request,
+      originalRequest: context.request,
+    });
+
     const referer = this.app.onConfigMatch.call({
       ...context,
-      request: {
-        ...context.request,
-        isRebasing: true,
-        url: refererHeader,
-        path: refererPathName,
-      },
+      logger: logger,
+      request: request,
     });
 
     if (!referer) return undefined;
 
+    logger.info('Matched path by referer');
+
+    const match = referer.match;
+
     return {
       ...context,
-      match: referer.match,
+      logger: logger,
+      match: match,
     };
   };
 

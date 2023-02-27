@@ -27,7 +27,7 @@ export class ProxyTransportUndiciExtension
       .tapPromise(
         'ProxyTransportUndiciExtension',
         async (context: OnServiceCall): Promise<OnPostServiceCall> => {
-          this.logger.debug(
+          this.contextLogger(context).debug(
             {
               url: context.serviceRequestUrl,
               options: context.serviceRequestOptions,
