@@ -1,6 +1,8 @@
 [
   {
-    "source": "/",
+    "match": {
+      "path": "/"
+    },
     "target": "https://example.com",
     "rebaseAbsolutePathsByReferer": true,
     "cors": "referer"
