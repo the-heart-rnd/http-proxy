@@ -31,6 +31,7 @@
     "pino": "^8.8.0",
     "pino-pretty": "^7.0.0",
     "rambda": "^7.4.0",
+    "read-pkg-up": "^7.0.1",
     "socks": "^2.7.1",
     "tapable": "^2.2.1",
     "undici": "^5.16.0",

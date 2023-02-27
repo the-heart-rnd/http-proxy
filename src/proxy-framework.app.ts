@@ -33,15 +33,16 @@ import {
 import { Flows } from 'src/flows';
 import { ProxyExtension } from 'src/extensions/proxy.extension';
 import { ExtensionClass } from 'src/extensions/types';
+import { sync as readPackageJson } from 'read-pkg-up';
 
-function readVersion() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pkg = require('../../package.json');
-    return pkg.version;
-  } catch (_) {
-    return '';
+function readVersion(): string {
+  const packageJson = readPackageJson();
+
+  if (!packageJson) {
+    throw new Error('Could not find package.json');
   }
+
+  return packageJson.packageJson.version;
 }
 
 class AsyncSeriesBailRejectHook<T, R> extends AsyncSeriesBailHook<
@@ -133,7 +134,7 @@ export class ProxyFrameworkApp {
   public flows: Flows;
 
   constructor(public readonly configuration: AppConfiguration) {
-    this.version = readVersion().version;
+    this.version = readVersion();
     this.logger = configuration.logger;
     this.flows = new Flows(this);
   }
