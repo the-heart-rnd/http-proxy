@@ -71,10 +71,12 @@ export class InputHttpExtension
       chunks.push(onRequestBodyChunk.chunk);
     });
     await new Promise((resolve, reject) => {
-      if (!req.complete) {
-        reject(new BailSynth(500, {}, 'Request not complete'));
-      }
-      req.on('end', resolve);
+      req.on('end', () => {
+        if (!req.complete) {
+          reject(new BailSynth(500, {}, 'Request not complete'));
+        }
+        resolve(void 0);
+      });
       req.on('error', reject);
     });
 
