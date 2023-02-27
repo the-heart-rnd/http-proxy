@@ -1,3 +1,9 @@
+interface RuleResponseRewriteRebase {
+  match: {
+    contentTypes: string | string[];
+  };
+}
+
 interface RuleResponseRewrite {
   /**
    * If set, the urls in the response body will be rewritten to match the proxy
@@ -7,13 +13,7 @@ interface RuleResponseRewrite {
    * If set to an array of strings, the content type will be matched against the
    * array.
    */
-  linksInResponse?:
-    | {
-        match: {
-          contentTypes: string | string[];
-        };
-      }
-    | boolean;
+  rebase?: RuleResponseRewriteRebase | boolean;
 }
 
 interface RuleResponse {

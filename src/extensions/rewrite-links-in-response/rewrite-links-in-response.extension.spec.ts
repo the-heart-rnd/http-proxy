@@ -2,68 +2,86 @@ import getPort from 'get-port';
 import { createTestProxy } from 'test/create-test-proxy';
 import { InputHttpExtension } from 'src/extensions/input-http/input-http.extension';
 import { RewriteLinksInResponseExtension } from 'src/extensions/rewrite-links-in-response/rewrite-links-in-response.extension';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { OnPostServiceCall, OnServiceCall } from 'src/context.types';
 import { HeadersMap } from 'src/headers.helpers';
 
 describe('RewriteLinksInResponseExtension', () => {
-  const configs: Partial<Rule>[] = [
+  const configs: { rules: Partial<Rule>; shouldRewriteCSS: boolean }[] = [
     {
-      response: {
-        rewrite: {
-          linksInResponse: {
-            match: {
-              contentTypes: 'text/html',
+      shouldRewriteCSS: false,
+      rules: {
+        response: {
+          rewrite: {
+            rebase: {
+              match: {
+                contentTypes: 'text/html',
+              },
             },
           },
         },
       },
     },
     {
-      response: { rewrite: { linksInResponse: true } },
+      shouldRewriteCSS: true,
+      rules: {
+        response: { rewrite: { rebase: true } },
+      },
     },
     {
-      response: {
-        rewrite: {
-          linksInResponse: {
-            match: {
-              contentTypes: ['text/html', 'application/json'],
+      shouldRewriteCSS: false,
+      rules: {
+        response: {
+          rewrite: {
+            rebase: {
+              match: {
+                contentTypes: ['text/html', 'application/json'],
+              },
             },
           },
         },
       },
     },
     {
-      response: {
-        rewrite: {
-          linksInResponse: {
-            match: {
-              contentTypes: 'text/*',
+      shouldRewriteCSS: true,
+      rules: {
+        response: {
+          rewrite: {
+            rebase: {
+              match: {
+                contentTypes: 'text/*',
+              },
             },
           },
         },
       },
     },
     {
-      response: {
-        rewrite: {
-          linksInResponse: {
-            match: {
-              contentTypes: 'text/*',
+      shouldRewriteCSS: true,
+      rules: {
+        response: {
+          rewrite: {
+            rebase: {
+              match: {
+                contentTypes: 'text/*',
+              },
             },
           },
         },
       },
     },
     {
-      rewriteBody: 'text/*',
+      shouldRewriteCSS: true,
+      rules: {
+        rewriteBody: 'text/*',
+      },
     },
   ];
 
   for (const i in configs) {
     const config = configs[i];
     it(`should replace all links to matched service with links to proxy, variant ${
-      i + 1
+      parseInt(i) + 1
     }`, async () => {
       const port = await getPort();
       const { proxy, onServiceCallMock } = await createTestProxy({
@@ -73,7 +91,7 @@ describe('RewriteLinksInResponseExtension', () => {
             match: {
               path: '/proxy',
             },
-            ...config,
+            ...config.rules,
           },
         ],
         http: { port: port, host: 'localhost' },
@@ -93,6 +111,10 @@ describe('RewriteLinksInResponseExtension', () => {
             }),
             serviceResponseBody: Buffer.from(
               `<html lang="en">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Some title</title>
+    </head>
             <body>
             <a href="http://mocked.com/some/path">Some link</a>
             <a href="http://mocked.com/some/other/path">Some other link</a>
@@ -103,13 +125,56 @@ describe('RewriteLinksInResponseExtension', () => {
         },
       );
 
-      const response = await axios.get(`http://localhost:${port}/proxy`);
-      expect(response.data).toContain(
-        `<a href="http://localhost:${port}/proxy/some/path">Some link</a>`,
+      let response: AxiosResponse;
+
+      response = await axios.get(`http://localhost:${port}/proxy`);
+      expect(response.data).toBe(
+        `<html lang="en">
+<head lang="en"><base href="/proxy">
+    <meta charset="UTF-8">
+    <title>Some title</title>
+    </head>
+            <body>
+            <a href="http://localhost:${port}/proxy/some/path">Some link</a>
+            <a href="http://localhost:${port}/proxy/some/other/path">Some other link</a>
+            </body>
+        </html>`,
       );
-      expect(response.data).toContain(
-        `<a href="http://localhost:${port}/proxy/some/other/path">Some other link</a>`,
+
+      const cssData = `@import url("/some/path");
+@import "/some/path";
+@import '/some/path';
+body {
+    background: url("/some/path") url(/some/path) url('/some/path');
+}`;
+
+      onServiceCallMock.mockImplementationOnce(
+        (context: OnServiceCall): OnPostServiceCall => {
+          return {
+            ...context,
+            serviceResponseHasBody: true,
+            serviceResponseStatusCode: 200,
+            serviceResponseHeaders: HeadersMap.from({
+              'content-type': 'text/css',
+            }),
+            serviceResponseBody: Buffer.from(cssData),
+          };
+        },
       );
+
+      response = await axios.get(`http://localhost:${port}/proxy`);
+
+      if (config.shouldRewriteCSS) {
+        const rewrittenCSS = `@import url("/proxy/some/path");
+@import "/proxy/some/path";
+@import '/proxy/some/path';
+body {
+    background: url("/proxy/some/path") url(/proxy/some/path) url('/proxy/some/path');
+}`;
+        expect(response.data).toBe(rewrittenCSS);
+      } else {
+        expect(response.data).toBe(cssData);
+      }
     });
   }
 });

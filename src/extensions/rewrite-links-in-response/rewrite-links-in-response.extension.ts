@@ -1,10 +1,26 @@
 import { ProxyExtension } from 'src/extensions/proxy.extension';
 import { DecodeBodyExtension } from 'src/extensions/decode-body/decode-body.extension';
-import { OnModifyServiceResponseBody } from 'src/context.types';
-import { parse } from 'content-type';
+import {
+  OnModifyServiceResponseBody,
+  OnModifyServiceResponseWithBody,
+} from 'src/context.types';
+import { parse, ParsedMediaType } from 'content-type';
+import { AbstractResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/abstract-response.processor';
+import { HTMLResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/html-response.processor';
+import { TextResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/text-response.processor';
+import { CSSResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/css-response.processor';
 
 export class RewriteLinksInResponseExtension extends ProxyExtension {
-  static dependencies = [DecodeBodyExtension];
+  static dependencies = [
+    DecodeBodyExtension,
+    HTMLResponseProcessor,
+    TextResponseProcessor,
+    CSSResponseProcessor,
+  ];
+  private contentTypeToProcessorMap = new Map<
+    string,
+    AbstractResponseProcessor
+  >();
 
   async init(): Promise<void> {
     this.app.onModifyServiceResponseBody
@@ -15,12 +31,27 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
         RewriteLinksInResponseExtension.name,
         this.rewriteLinksInResponseBody,
       );
+
+    this.contentTypeToProcessorMap.set(
+      'text/html',
+      this.app.get(HTMLResponseProcessor),
+    );
+
+    this.contentTypeToProcessorMap.set(
+      'text/css',
+      this.app.get(CSSResponseProcessor),
+    );
+
+    this.contentTypeToProcessorMap.set(
+      'text/*',
+      this.app.get(TextResponseProcessor),
+    );
   }
 
   private rewriteLinksInResponseBody = (
     context: OnModifyServiceResponseBody,
   ): OnModifyServiceResponseBody => {
-    let rewriteBody = context.match.response?.rewrite?.linksInResponse;
+    let rewriteBody = context.match.response?.rewrite?.rebase;
 
     // Handle legacy config
     if (!rewriteBody && context.match.rewriteBody !== undefined) {
@@ -40,7 +71,6 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
     }
     // End legacy config
 
-    let allowedContentTypes: string[];
     if (!rewriteBody) {
       return context;
     }
@@ -49,59 +79,99 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
       return context;
     }
 
-    if (rewriteBody === true) {
-      allowedContentTypes = [
-        'text/*',
-        'application/json',
-        'application/javascript',
-      ];
-    } else if (typeof rewriteBody.match.contentTypes === 'string') {
-      allowedContentTypes = [rewriteBody.match.contentTypes];
-    } else {
-      allowedContentTypes = rewriteBody.match.contentTypes;
-    }
-
-    let contentTypeHeader = context.serviceResponseHeaders.get('content-type');
+    const contentTypeHeader =
+      context.serviceResponseHeaders.get('content-type');
 
     if (!contentTypeHeader) {
       this.contextLogger(context).warn(
-        'No content-type header found in response, assuming text/html',
+        'No content-type header found in response, cannot perform rebasing.',
       );
-      contentTypeHeader = 'text/html';
+      return context;
     }
 
     const contentType = parse(contentTypeHeader);
-    if (!this.contentTypeMatch(allowedContentTypes, contentType.type)) {
-      return context;
-    }
-    const contents = context.serviceResponseBody.toString(
-      contentType.parameters['charset'] as BufferEncoding | undefined,
-    );
-    const target = context.match.target;
-    const servicePath = context.match.match?.path || '';
-    const proxyOrigin = new URL(context.request.url).origin;
 
-    const replaceValue = proxyOrigin + servicePath;
-    this.contextLogger(context).debug(
-      `Replacing all ${target} with ${replaceValue} in response`,
-    );
-    context.serviceResponseBody = Buffer.from(
-      contents.replaceAll(target, replaceValue),
-    );
+    if (typeof rewriteBody === 'object' && rewriteBody.match.contentTypes) {
+      let contentTypesAllowedByRule = rewriteBody.match.contentTypes;
+      if (!Array.isArray(contentTypesAllowedByRule)) {
+        contentTypesAllowedByRule = [contentTypesAllowedByRule];
+      }
 
-    return context;
-  };
-
-  private contentTypeMatch(allowedContentTypes: string[], type: string) {
-    return allowedContentTypes.some((allowedContentType) => {
-      const [allowedType, allowedSubType] = allowedContentType.split('/');
-      const [typeType, typeSubType] = type.split('/');
-
-      if (allowedType === '*' || allowedType === typeType) {
-        if (allowedSubType === '*' || allowedSubType === typeSubType) {
-          return true;
+      let allowed = false;
+      for (const contentTypeToMatchTo of contentTypesAllowedByRule) {
+        if (this.contentTypeMatch(contentTypeToMatchTo, contentType.type)) {
+          allowed = true;
+          break;
         }
       }
-    });
+
+      if (!allowed) {
+        this.contextLogger(context).debug(
+          { contentType: contentType.type },
+          'Content type not allowed by rule, skipping.',
+        );
+        return context;
+      }
+    }
+
+    return this.processResponseBody(context, contentType);
+  };
+
+  private contentTypeMatch(
+    contentTypeToMatchTo: string,
+    contentTypeToTest: string,
+  ) {
+    const [allowedType, allowedSubType] = contentTypeToMatchTo.split('/');
+    const [typeType, typeSubType] = contentTypeToTest.split('/');
+
+    if (allowedType === '*' || allowedType === typeType) {
+      if (allowedSubType === '*' || allowedSubType === typeSubType) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private processResponseBody(
+    context: OnModifyServiceResponseWithBody,
+    contentType: ParsedMediaType,
+  ) {
+    let processed = false;
+    for (const [contentTypeToMatchTo, processor] of this
+      .contentTypeToProcessorMap) {
+      if (this.contentTypeMatch(contentTypeToMatchTo, contentType.type)) {
+        this.contextLogger(context).debug(
+          {
+            contentType: contentType.type,
+            processor: processor.constructor.name,
+            processorContentType: contentTypeToMatchTo,
+          },
+          `Processing response body with processor for content-type ${contentTypeToMatchTo}`,
+        );
+        processed = true;
+        try {
+          context = processor.process(context, contentType);
+        } catch (e) {
+          this.contextLogger(context).error(
+            {
+              error: e,
+              contentType: contentType.type,
+              processorContentType: contentTypeToMatchTo,
+              processor: processor.constructor.name,
+            },
+            'Error while processing response body',
+          );
+        }
+      }
+    }
+
+    if (!processed) {
+      this.contextLogger(context).debug(
+        `No processor found for content-type ${contentType.type}`,
+      );
+    }
+
+    return context;
   }
 }
