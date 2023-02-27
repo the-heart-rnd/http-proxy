@@ -5,6 +5,7 @@
     "outDir": "./dist/cjs",
     "module": "CommonJS",
     "moduleResolution": "Node",
+    "noEmit": false
   },
   "exclude": [
     "**/*.spec.ts",
@@ -18,5 +19,5 @@
   "files": [
     "src/cli/cli.ts",
     "src/proxy-framework.app.ts"
-  ],
+  ]
 }
