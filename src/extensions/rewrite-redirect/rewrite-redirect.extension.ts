@@ -37,12 +37,14 @@ export class RewriteRedirectExtension extends ProxyExtension {
       reverseMatch,
       location,
     );
-    this.logger.info(
+    this.contextLogger(context).info(
       `Cannot rewrite redirect from ${location}, matcher could not create inverse url`,
     );
     if (!newLocation) return context;
 
-    this.logger.info(`Rewriting redirect from ${location} to ${newLocation}`);
+    this.contextLogger(context).info(
+      `Rewriting redirect from ${location} to ${newLocation}`,
+    );
     context.serviceResponseHeaders.set('location', newLocation);
     return context;
   };

@@ -102,23 +102,33 @@ export class MatchPathExtension extends ProxyExtension {
     const { config, request } = context;
     const { rules } = config;
     for (const rule of rules) {
+      let isLegacyConfig = false;
       // Handle legacy configs
       if (rule.source) {
-        this.logger.warn(
-          { rule },
-          `The "source" property is deprecated. Please use "match.path" instead.`,
-        );
+        isLegacyConfig = true;
         rule.match = { path: rule.source };
       }
-      // Handle legacy configs
 
+      // Handle legacy configs
       if (!rule.match?.path) continue;
 
       const match = this.match(request.path, rule.match.path);
 
       if (match) {
+        if (isLegacyConfig) {
+          this.contextLogger(context).warn(
+            { rule },
+            `The "source" property is deprecated. Please use "match.path" instead.`,
+          );
+        }
+
+        const logger = this.contextLogger(context).child({ rule });
+
+        logger.info(`Matched rule by path`);
+
         return {
           ...context,
+          logger: logger,
           match: rule,
         };
       }

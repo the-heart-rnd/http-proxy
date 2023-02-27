@@ -2,15 +2,17 @@ import { Socket } from 'net';
 import { Readable } from 'stream';
 import { FormData } from 'undici/types/formdata';
 import { HeadersMap } from 'src/headers.helpers';
+import pino from 'pino';
 
 export type RequestHeaders = HeadersMap;
 export type ResponseHeaders = HeadersMap;
 
 export type OnConnection = {
   connection: Socket;
+  logger: pino.Logger;
 };
 
-export type OnRequestHeaders = {
+export type OnRequestHeaders = OnConnection & {
   headers: RequestHeaders;
 };
 export type OnPreConfigMatch = OnRequestHeaders & {

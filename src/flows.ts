@@ -174,12 +174,16 @@ export class Flows {
     const onRequestHeaders = await this.app.onRequestHeaders.promise(
       onRequestHeadersArg,
     );
+    const request = await implementation.prepareRequest(
+      onRequestHeaders,
+      implementationContext,
+    );
     const onPreConfigMatchArg: OnPreConfigMatch = {
       ...onRequestHeaders,
-      request: await implementation.prepareRequest(
-        onRequestHeaders,
-        implementationContext,
-      ),
+      request: request,
+      logger: onRequestHeaders.logger.child({
+        request: request,
+      }),
       config: this.app.configuration,
     };
     const onConfigMatchFound = await this.executeConfigMatchFlow(
@@ -229,22 +233,9 @@ export class Flows {
     const onConfigMatch = this.app.onConfigMatch.call(onPreConfigMatch);
 
     if (!onConfigMatch) {
-      this.app.logger.warn(
-        {
-          request: onPreConfigMatch.request.url,
-        },
-        `No match found`,
-      );
+      onPreConfigMatchArg.logger.warn(`No match found`);
       await this.app.onConfigMatchNotFound.promise(onPreConfigMatch);
       throw new BailSynth(404);
-    } else {
-      this.app.logger.info(
-        {
-          request: onConfigMatch.request.url,
-          target: onConfigMatch.match.target,
-        },
-        `Matched rule`,
-      );
     }
     return await this.app.onConfigMatchFound.promise(onConfigMatch);
   }

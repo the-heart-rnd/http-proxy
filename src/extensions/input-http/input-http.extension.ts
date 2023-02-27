@@ -18,6 +18,7 @@ import { SetHostExtension } from 'src/extensions/set-host/set-host.extension';
 import { MatchPathExtension } from 'src/extensions/match-path/match-path.extension';
 import { Argv } from 'yargs';
 import { HeadersMap } from 'src/headers.helpers';
+import { v4 } from 'uuid';
 
 type TransportContext = { req: IncomingMessage };
 
@@ -176,9 +177,13 @@ export class InputHttpExtension
 
     await this.httpServer.on('connection', async (socket) => {
       socket.pause();
+      const logger = this.logger.child({
+        'request-id': v4(),
+      });
 
       await this.app.onConnection.promise({
         connection: socket,
+        logger,
       });
 
       socket.resume();
@@ -192,8 +197,12 @@ export class InputHttpExtension
   };
 
   private onRequest: RequestListener = async (req, res) => {
+    const logger = this.logger.child({
+      'request-id': v4(),
+    });
+
     try {
-      this.logger.debug(
+      logger.debug(
         {
           headers: req.headers,
           method: req.method,
@@ -201,10 +210,13 @@ export class InputHttpExtension
         },
         'Incoming HTTP request',
       );
+
       const requestResponseFlowResult =
         await this.app.flows.executeRequestResponseFlow(
           {
             headers: HeadersMap.from(req.headers),
+            logger,
+            connection: req.socket,
           },
           { req },
           this,
@@ -227,7 +239,7 @@ export class InputHttpExtension
         res.end();
       } else {
         if (error instanceof Error) {
-          this.logger.error(error);
+          logger.error(error);
         } else if (
           typeof error === 'object' &&
           error !== null &&
@@ -236,9 +248,9 @@ export class InputHttpExtension
         ) {
           const repackedError = new Error(String(error.message));
           repackedError.stack = String(error.stack);
-          this.logger.error(repackedError);
+          logger.error(repackedError);
         } else {
-          this.logger.error(error);
+          logger.error(error);
         }
         res.writeHead(500, 'Proxy Server Error');
         res.end();

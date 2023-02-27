@@ -6,6 +6,8 @@ import { BailSynth } from 'src/flow-control';
 import { Socket } from 'net';
 import { InputHttpExtension } from 'src/extensions/input-http/input-http.extension';
 import { HeadersMap } from 'src/headers.helpers';
+import { v4 } from 'uuid';
+import { OnRequestHeaders } from 'src/context.types';
 
 export class InputWsExtension extends ProxyExtension {
   private wsProxy?: WebSocketProxyServer;
@@ -52,11 +54,19 @@ export class InputWsExtension extends ProxyExtension {
     socket: Socket,
     head: Buffer,
   ) => {
+    const logger = this.logger.child({
+      'request-id': v4(),
+    });
+
+    const context: OnRequestHeaders = {
+      headers: HeadersMap.from(req.headers),
+      connection: req.socket,
+      logger,
+    };
+
     try {
       const preServiceFlowResult = await this.app.flows.executePreServiceFlow(
-        {
-          headers: HeadersMap.from(req.headers),
-        },
+        context,
         { req },
         this.transportHttpExtension,
       );
@@ -72,7 +82,7 @@ export class InputWsExtension extends ProxyExtension {
         ignorePath: true,
       };
 
-      this.logger.debug(
+      logger.debug(
         {
           options,
         },
@@ -82,15 +92,18 @@ export class InputWsExtension extends ProxyExtension {
       this.wsProxy!.ws(req, socket, head, options);
     } catch (err) {
       if (err instanceof BailSynth) {
-        this.bailSocket(socket, err);
+        this.bailSocket(socket, err, context);
       } else {
-        this.errorSocket(err, socket);
+        this.errorSocket(err, socket, context);
       }
     }
   };
 
-  private errorSocket(err: unknown, socket: Socket) {
-    this.logger.error(err, 'Error while handling WebSocket request');
+  private errorSocket(err: unknown, socket: Socket, context: OnRequestHeaders) {
+    this.contextLogger(context).error(
+      err,
+      'Error while handling WebSocket request',
+    );
     socket.write(
       `HTTP/1.1 500 ${http.STATUS_CODES[500]}
 `,
@@ -98,8 +111,12 @@ export class InputWsExtension extends ProxyExtension {
     socket.end();
   }
 
-  private bailSocket(socket: Socket, err: BailSynth) {
-    this.logger.info(
+  private bailSocket(
+    socket: Socket,
+    err: BailSynth,
+    context: OnRequestHeaders,
+  ) {
+    this.contextLogger(context).info(
       {
         err,
       },

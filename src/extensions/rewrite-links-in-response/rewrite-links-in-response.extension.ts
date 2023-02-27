@@ -24,7 +24,7 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
 
     // Handle legacy config
     if (!rewriteBody && context.match.rewriteBody !== undefined) {
-      this.logger.warn(
+      this.contextLogger(context).warn(
         { rule: context.match },
         'The "rewriteBody" property is deprecated. Please use "response.rewrite.linksInResponse" instead.',
       );
@@ -64,7 +64,7 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
     let contentTypeHeader = context.serviceResponseHeaders.get('content-type');
 
     if (!contentTypeHeader) {
-      this.logger.warn(
+      this.contextLogger(context).warn(
         'No content-type header found in response, assuming text/html',
       );
       contentTypeHeader = 'text/html';
@@ -82,7 +82,7 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
     const proxyOrigin = new URL(context.request.url).origin;
 
     const replaceValue = proxyOrigin + servicePath;
-    this.logger.debug(
+    this.contextLogger(context).debug(
       `Replacing all ${target} with ${replaceValue} in response`,
     );
     context.serviceResponseBody = Buffer.from(
