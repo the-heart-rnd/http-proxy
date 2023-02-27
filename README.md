@@ -93,10 +93,10 @@ If this property is set to `true`, location headers set by the target service wi
 ]
 ```
 
-### response.rewrite.linksInResponse
+### response.rewrite.rebase
 **Use cases**: SPAs, forms.
 
-You can also set `response.rewrite.linksInResponse` to `true` to rewrite the body contents of the request. This is useful if you are having issues with asset urls, form action urls etc.
+You can also set `response.rewrite.rebase` to `true` to rewrite the body contents of the request. This is useful if you are having issues with asset urls, form action urls etc.
 It will rewrite the body contents of the request to the target url.
 
 ```json
@@ -108,7 +108,7 @@ It will rewrite the body contents of the request to the target url.
     "target": "http://localhost:3000",
     "response": {
         "rewrite": {
-            "linksInResponse": true
+            "rebase": true
         }
     }
   }
@@ -126,7 +126,7 @@ By default, it will only modify contents of `text/html` content types. If you wa
     "target": "http://localhost:3000",
     "response": {
       "rewrite": {
-        "linksInResponse": ["text/html", "application/json"]
+        "rebase": ["text/html", "application/json"]
       }
     }
   }

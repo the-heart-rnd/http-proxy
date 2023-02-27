@@ -1,12 +1,12 @@
 import getPort from 'get-port';
 import { createTestProxy } from 'test/create-test-proxy';
 import { InputHttpExtension } from 'src/extensions/input-http/input-http.extension';
-import { RewriteLinksInResponseExtension } from 'src/extensions/rewrite-links-in-response/rewrite-links-in-response.extension';
+import { RewriteRebaseExtension } from 'src/extensions/rewrite-rebase/rewrite-rebase.extension';
 import axios, { AxiosResponse } from 'axios';
 import { OnPostServiceCall, OnServiceCall } from 'src/context.types';
 import { HeadersMap } from 'src/headers.helpers';
 
-describe('RewriteLinksInResponseExtension', () => {
+describe('RewriteRebaseExtension', () => {
   const configs: { rules: Partial<Rule>; shouldRewriteCSS: boolean }[] = [
     {
       shouldRewriteCSS: false,
@@ -97,7 +97,7 @@ describe('RewriteLinksInResponseExtension', () => {
         http: { port: port, host: 'localhost' },
       });
       proxy.use(InputHttpExtension);
-      proxy.use(RewriteLinksInResponseExtension);
+      proxy.use(RewriteRebaseExtension);
       await proxy.start();
 
       onServiceCallMock.mockImplementationOnce(

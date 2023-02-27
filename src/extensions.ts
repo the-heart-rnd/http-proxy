@@ -2,7 +2,7 @@ import { InputHttpExtension } from 'src/extensions/input-http/input-http.extensi
 import { ProxyTransportUndiciExtension } from 'src/extensions/proxy-transport-undici/proxy-transport-undici.extension';
 import { InputWsExtension } from 'src/extensions/input-ws/input-ws.extension';
 import { ResponseHeadersExtension } from 'src/extensions/response-headers/response-headers.extension';
-import { RewriteLinksInResponseExtension } from 'src/extensions/rewrite-links-in-response/rewrite-links-in-response.extension';
+import { RewriteRebaseExtension } from 'src/extensions/rewrite-rebase/rewrite-rebase.extension';
 import { DecodeBodyExtension } from 'src/extensions/decode-body/decode-body.extension';
 import { MatchPathExtension } from 'src/extensions/match-path/match-path.extension';
 import { SetHostExtension } from 'src/extensions/set-host/set-host.extension';
@@ -16,7 +16,7 @@ export const extensions = [
   ProxyTransportUndiciExtension,
   InputWsExtension,
   ResponseHeadersExtension,
-  RewriteLinksInResponseExtension,
+  RewriteRebaseExtension,
   DecodeBodyExtension,
   MatchPathExtension,
   SetHostExtension,

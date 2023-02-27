@@ -5,12 +5,12 @@ import {
   OnModifyServiceResponseWithBody,
 } from 'src/context.types';
 import { parse, ParsedMediaType } from 'content-type';
-import { AbstractResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/abstract-response.processor';
-import { HTMLResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/html-response.processor';
-import { TextResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/text-response.processor';
-import { CSSResponseProcessor } from 'src/extensions/rewrite-links-in-response/processors/css-response.processor';
+import { AbstractResponseProcessor } from 'src/extensions/rewrite-rebase/processors/abstract-response.processor';
+import { HTMLResponseProcessor } from 'src/extensions/rewrite-rebase/processors/html-response.processor';
+import { TextResponseProcessor } from 'src/extensions/rewrite-rebase/processors/text-response.processor';
+import { CSSResponseProcessor } from 'src/extensions/rewrite-rebase/processors/css-response.processor';
 
-export class RewriteLinksInResponseExtension extends ProxyExtension {
+export class RewriteRebaseExtension extends ProxyExtension {
   static dependencies = [
     DecodeBodyExtension,
     HTMLResponseProcessor,
@@ -27,10 +27,7 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
       .withOptions({
         stage: 2,
       })
-      .tap(
-        RewriteLinksInResponseExtension.name,
-        this.rewriteLinksInResponseBody,
-      );
+      .tap(RewriteRebaseExtension.name, this.rebaseResponseBody);
 
     this.contentTypeToProcessorMap.set(
       'text/html',
@@ -48,7 +45,7 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
     );
   }
 
-  private rewriteLinksInResponseBody = (
+  private rebaseResponseBody = (
     context: OnModifyServiceResponseBody,
   ): OnModifyServiceResponseBody => {
     let rewriteBody = context.match.response?.rewrite?.rebase;
@@ -57,7 +54,7 @@ export class RewriteLinksInResponseExtension extends ProxyExtension {
     if (!rewriteBody && context.match.rewriteBody !== undefined) {
       this.contextLogger(context).warn(
         { rule: context.match },
-        'The "rewriteBody" property is deprecated. Please use "response.rewrite.linksInResponse" instead.',
+        'The "rewriteBody" property is deprecated. Please use "response.rewrite.rebase" instead.',
       );
       if (context.match.rewriteBody === true) {
         rewriteBody = true;

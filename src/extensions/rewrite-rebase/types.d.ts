@@ -24,7 +24,7 @@ declare interface Rule {
   response?: RuleResponse;
 
   /**
-   * @deprecated use "rewrite.linksInResponse"
+   * @deprecated use "response.rewrite.rebase"
    */
   rewriteBody?: true | string | string[];
 }
