@@ -10,6 +10,8 @@ import { Dispatcher, request } from 'undici';
 import { ServiceFlowMethods } from 'src/flows';
 import { HeadersMap } from 'src/headers.helpers';
 import { omit } from 'rambda';
+import { wrap } from '@hitorisensei/errors.wrap';
+import RequestOptions = Dispatcher.RequestOptions;
 
 /**
  * This extension is responsible for sending the request to the target service
@@ -24,27 +26,43 @@ export class ProxyTransportUndiciExtension
       .withOptions({
         stage: 2,
       })
-      .tapPromise(
-        'ProxyTransportUndiciExtension',
-        async (context: OnServiceCall): Promise<OnPostServiceCall> => {
-          this.contextLogger(context).debug(
-            {
-              url: context.serviceRequestUrl,
-              options: context.serviceRequestOptions,
-            },
-            'Sending request to service',
-          );
-          const response = await request(context.serviceRequestUrl, {
-            ...omit(['path', 'origin'], context.serviceRequestOptions),
-            headers: context.serviceRequestOptions.headers?.toJSON(),
-            maxRedirections: 0,
-            idempotent: false,
-          });
-
-          return this.app.flows.executeServiceFlow(context, response, this);
-        },
-      );
+      .tapPromise('ProxyTransportUndiciExtension', this.callService);
   }
+
+  private callService = async (
+    context: OnServiceCall,
+  ): Promise<OnPostServiceCall> => {
+    this.contextLogger(context).debug(
+      {
+        url: context.serviceRequestUrl,
+        options: context.serviceRequestOptions,
+      },
+      'Sending request to service',
+    );
+    try {
+      const headers = context.serviceRequestOptions.headers?.toJSON();
+
+      const options: Omit<RequestOptions, 'origin' | 'path' | 'method'> &
+        Partial<Pick<RequestOptions, 'method'>> = {
+        ...omit(['path', 'origin'], context.serviceRequestOptions),
+        headers: headers,
+        maxRedirections: 0,
+        idempotent: false,
+      };
+
+      if (context.serviceRequestHasBody) {
+        options.body = context.serviceRequestBody;
+      }
+
+      const response = await request(context.serviceRequestUrl, options);
+
+      return this.app.flows.executeServiceFlow(context, response, this);
+    } catch (e) {
+      const wrappedError = wrap(e, 'failed to call service');
+      this.contextLogger(context).error(wrappedError);
+      throw wrappedError;
+    }
+  };
 
   public async prepareServiceResponseHeaders(
     context: OnServiceCall,
