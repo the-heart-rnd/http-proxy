@@ -33,12 +33,15 @@ import {
 import { Flows } from 'src/flows';
 import { ProxyExtension } from 'src/extensions/proxy.extension';
 import { ExtensionClass } from 'src/extensions/types';
+import { sync as readPackageUpSync } from 'read-pkg-up';
 
-function readVersion() {
+function readVersion(): string {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pkg = require('../../package.json');
-    return pkg.version;
+    // TODO: replace with build-time variable
+    const pkg = readPackageUpSync({
+      cwd: __dirname,
+    });
+    return pkg?.packageJson.version || '';
   } catch (_) {
     return '';
   }
@@ -133,13 +136,14 @@ export class ProxyFrameworkApp {
   public flows: Flows;
 
   constructor(public readonly configuration: AppConfiguration) {
-    this.version = readVersion().version;
+    this.version = readVersion();
     this.logger = configuration.logger;
     this.flows = new Flows(this);
   }
 
   public async start() {
     this.logger.info(`Starting proxy server v${this.version}`);
+    this.logger.debug(`Log level: ${this.logger.level}`);
     this.logger.info(`Initializing extensions`);
 
     await this.onInitExtensions.promise(this);

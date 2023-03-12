@@ -3,6 +3,15 @@ import { OnConfigMatchFound, OnPreConfigMatch } from 'src/context.types';
 import { Argv } from 'yargs';
 
 export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
+  // CLI
+  static prepareCli(cli: Argv) {
+    return cli.option('matchAbsolutePathsByReferer', {
+      type: 'boolean',
+      default: true,
+      description: 'Match absolute paths by referer (see readme)',
+    });
+  }
+
   async init(): Promise<void> {
     if (this.app.configuration.matchAbsolutePathsByReferer === false) {
       this.logger.info(
@@ -16,6 +25,13 @@ export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
         stage: -1,
       })
       .tap(MatchAbsolutePathsByRefererExtension.name, this.onPreConfigMatch);
+
+    this.app.onStart
+      .withOptions({ stage: -1 })
+      .tap(
+        MatchAbsolutePathsByRefererExtension.name,
+        this.handleDeprecatedConfig,
+      );
   }
 
   private onPreConfigMatch = (
@@ -64,12 +80,27 @@ export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
     };
   };
 
-  // CLI
-  static prepareCli(cli: Argv) {
-    return cli.option('matchAbsolutePathsByReferer', {
-      type: 'boolean',
-      default: true,
-      description: 'Match absolute paths by referer (see readme)',
-    });
-  }
+  private handleDeprecatedConfig = () => {
+    const rules = this.app.configuration.rules;
+    for (const i in rules) {
+      const rule = rules[i];
+      if (rule.rebaseAbsolutePathsByReferer) {
+        const updatedRule = {
+          ...rule,
+        };
+        delete updatedRule.rebaseAbsolutePathsByReferer;
+
+        this.logger.warn(
+          {
+            deprecatedRule: rule,
+            updatedRule: updatedRule,
+            option: 'rebaseAbsolutePathsByReferer',
+          },
+          'This option is now enabled by default for all paths. Can be disabled globally using the CLI option `--matchAbsolutePathsByReferer=false`',
+        );
+
+        rules[i] = updatedRule;
+      }
+    }
+  };
 }

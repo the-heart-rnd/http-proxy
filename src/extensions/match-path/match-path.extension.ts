@@ -26,6 +26,10 @@ export class MatchPathExtension extends ProxyExtension {
 
     this.app.onConfigMatch.tap(MatchPathExtension.name, this.matchPath);
 
+    this.app.onStart
+      .withOptions({ stage: -1 })
+      .tap(MatchPathExtension.name, this.handleDeprecatedConfig);
+
     this.app.onStart.tap(MatchPathExtension.name, this.logAppliedRewrites);
   }
 
@@ -72,6 +76,20 @@ export class MatchPathExtension extends ProxyExtension {
     return proxyUrl.toString();
   }
 
+  public getReverseMatch(location: string): Rule | undefined {
+    let bestmatch: Rule | undefined;
+    for (const rule of this.app.configuration.rules) {
+      if (!location.startsWith(rule.target)) continue;
+      if (
+        !bestmatch ||
+        (bestmatch.match?.path?.length || 0) > (rule.match?.path?.length || 0)
+      ) {
+        bestmatch = rule;
+      }
+    }
+    return bestmatch;
+  }
+
   private getSubpath(requestUrl: string, rulePath: string) {
     return requestUrl.substring(rulePath.length).replace(/^\//, '');
   }
@@ -87,14 +105,35 @@ export class MatchPathExtension extends ProxyExtension {
     };
   };
 
-  private logAppliedRewrites = (app: ProxyFrameworkApp) => {
-    const rewrites = app.configuration.rules;
-    for (const rule of rewrites) {
-      const { target, match } = rule;
-      if (!match?.path) {
-        continue;
+  private handleDeprecatedConfig = (app: ProxyFrameworkApp) => {
+    const { rules } = app.configuration;
+
+    for (const i in rules) {
+      let rule = rules[i];
+      // Handle legacy configs
+      if (rule.source) {
+        const correctRule = { ...rule, match: { path: rule.source } };
+        delete correctRule.source;
+
+        this.logger.warn(
+          { deprecatedRule: rule, updatedRule: correctRule, option: 'source' },
+          `The "source" property is deprecated. Please use "match.path" instead.`,
+        );
+
+        rules[i] = rule = correctRule;
       }
-      this.logger.info(`Binding ${match.path} to service ${target}`);
+    }
+  };
+
+  private logAppliedRewrites = (app: ProxyFrameworkApp) => {
+    const { rules } = app.configuration;
+
+    for (const rule of rules) {
+      if (!rule.match?.path) continue;
+
+      const { target, match } = rule;
+
+      this.logger.info(`Binding path ${match.path} to service ${target}`);
     }
   };
 
@@ -150,19 +189,5 @@ export class MatchPathExtension extends ProxyExtension {
       };
     }
     return undefined;
-  }
-
-  public getReverseMatch(location: string): Rule | undefined {
-    let bestmatch: Rule | undefined;
-    for (const rule of this.app.configuration.rules) {
-      if (!location.startsWith(rule.target)) continue;
-      if (
-        !bestmatch ||
-        (bestmatch.match?.path?.length || 0) > (rule.match?.path?.length || 0)
-      ) {
-        bestmatch = rule;
-      }
-    }
-    return bestmatch;
   }
 }
