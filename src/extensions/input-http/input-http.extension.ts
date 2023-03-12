@@ -19,6 +19,7 @@ import { MatchPathExtension } from 'src/extensions/match-path/match-path.extensi
 import { Argv } from 'yargs';
 import { HeadersMap } from 'src/headers.helpers';
 import { v4 } from 'uuid';
+import { wrap } from '@hitorisensei/errors.wrap';
 
 type TransportContext = { req: IncomingMessage };
 
@@ -238,21 +239,10 @@ export class InputHttpExtension
         }
         res.end();
       } else {
-        if (error instanceof Error) {
-          logger.error(error);
-        } else if (
-          typeof error === 'object' &&
-          error !== null &&
-          'stack' in error &&
-          'message' in error
-        ) {
-          const repackedError = new Error(String(error.message));
-          repackedError.stack = String(error.stack);
-          logger.error(repackedError);
-        } else {
-          logger.error(error);
-        }
-        res.writeHead(500, 'Proxy Server Error');
+        const wrappedError = wrap(error, 'Cannot complete HTTP request');
+        logger.error(wrappedError);
+        res.writeHead(502, 'Proxy Server Error');
+        res.write(wrappedError.message);
         res.end();
       }
     }
