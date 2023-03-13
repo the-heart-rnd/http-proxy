@@ -106,16 +106,19 @@ export type OnServiceResponseBodyChunk = OnServiceResponseHeaders & {
   chunk: Buffer;
 };
 
-export type OnModifyServiceResponseBody = OnModifyServiceResponseHeaders &
-  (
-    | {
-        serviceResponseHasBody: true;
-        serviceResponseBody: Buffer;
-      }
-    | {
-        serviceResponseHasBody: false;
-      }
-  );
+export type OnModifyServiceResponseWithBody = OnModifyServiceResponseHeaders & {
+  serviceResponseHasBody: true;
+  serviceResponseBody: Buffer;
+};
+
+export type OnModifyServiceResponseWithoutBody =
+  OnModifyServiceResponseHeaders & {
+    serviceResponseHasBody: false;
+  };
+
+export type OnModifyServiceResponseBody =
+  | OnModifyServiceResponseWithBody
+  | OnModifyServiceResponseWithoutBody;
 
 export type OnPostServiceCall = OnModifyServiceResponseBody;
 
