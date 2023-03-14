@@ -22,7 +22,7 @@ export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
 
     this.app.onConfigMatch
       .withOptions({
-        stage: -1,
+        stage: 2,
       })
       .tap(MatchAbsolutePathsByRefererExtension.name, this.onPreConfigMatch);
 
