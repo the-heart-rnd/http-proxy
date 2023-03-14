@@ -24,7 +24,7 @@ export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
       .withOptions({
         stage: 2,
       })
-      .tap(MatchAbsolutePathsByRefererExtension.name, this.onPreConfigMatch);
+      .tap(MatchAbsolutePathsByRefererExtension.name, this.onConfigMatch);
 
     this.app.onStart
       .withOptions({ stage: -1 })
@@ -34,7 +34,7 @@ export class MatchAbsolutePathsByRefererExtension extends ProxyExtension {
       );
   }
 
-  private onPreConfigMatch = (
+  private onConfigMatch = (
     context: OnPreConfigMatch,
   ): OnConfigMatchFound | undefined => {
     const refererHeader = context.headers.get('referer');
