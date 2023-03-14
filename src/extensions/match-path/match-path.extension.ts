@@ -140,6 +140,11 @@ export class MatchPathExtension extends ProxyExtension {
   private matchPath = (context: OnPreConfigMatch) => {
     const { config, request } = context;
     const { rules } = config;
+
+    const contextLogger = this.contextLogger(context);
+
+    contextLogger.info(`Trying to match by path ${request.path}`);
+
     for (const rule of rules) {
       let isLegacyConfig = false;
       // Handle legacy configs
@@ -155,13 +160,13 @@ export class MatchPathExtension extends ProxyExtension {
 
       if (match) {
         if (isLegacyConfig) {
-          this.contextLogger(context).warn(
+          contextLogger.warn(
             { rule },
             `The "source" property is deprecated. Please use "match.path" instead.`,
           );
         }
 
-        const logger = this.contextLogger(context).child({ rule });
+        const logger = contextLogger.child({ rule });
 
         logger.info(`Matched rule by path`);
 
@@ -172,6 +177,9 @@ export class MatchPathExtension extends ProxyExtension {
         };
       }
     }
+
+    contextLogger.info(`No match found by path`);
+    return undefined;
   };
 
   private match(requestedPath: string, rulePath: string) {
