@@ -95,6 +95,10 @@ export class Flows {
   public async findAndCallServiceFlow(
     onModifyServiceRequestBody: OnServiceCall,
   ) {
+    this.app.logger.debug(
+      onModifyServiceRequestBody,
+      'Finding service to call',
+    );
     const onServiceCall = await this.app.onServiceCall.promise(
       onModifyServiceRequestBody,
     );
