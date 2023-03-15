@@ -4,7 +4,8 @@
       "path": "/"
     },
     "target": "https://example.com",
-    "rebaseAbsolutePathsByReferer": true,
-    "cors": "referer"
+    "response": {
+      "cors": "referer"
+    }
   }
 ]
