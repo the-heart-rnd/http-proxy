@@ -23,6 +23,10 @@ export class RewriteRebaseExtension extends ProxyExtension {
   >();
 
   async init(): Promise<void> {
+    this.app.onStart
+      .withOptions({ stage: -1 })
+      .tap(RewriteRebaseExtension.name, this.handleDeprecatedConfig);
+
     this.app.onModifyServiceResponseBody
       .withOptions({
         stage: 2,
@@ -48,25 +52,7 @@ export class RewriteRebaseExtension extends ProxyExtension {
   private rebaseResponseBody = (
     context: OnModifyServiceResponseBody,
   ): OnModifyServiceResponseBody => {
-    let rewriteBody = context.match.response?.rewrite?.rebase;
-
-    // Handle legacy config
-    if (!rewriteBody && context.match.rewriteBody !== undefined) {
-      this.contextLogger(context).warn(
-        { rule: context.match },
-        'The "rewriteBody" property is deprecated. Please use "response.rewrite.rebase" instead.',
-      );
-      if (context.match.rewriteBody === true) {
-        rewriteBody = true;
-      } else {
-        rewriteBody = {
-          match: {
-            contentTypes: context.match.rewriteBody,
-          },
-        };
-      }
-    }
-    // End legacy config
+    const rewriteBody = context.match.response?.rewrite?.rebase;
 
     if (!rewriteBody) {
       return context;
@@ -171,4 +157,40 @@ export class RewriteRebaseExtension extends ProxyExtension {
 
     return context;
   }
+
+  private handleDeprecatedConfig = () => {
+    const rules = this.app.configuration.rules;
+    for (const i in rules) {
+      const { rewriteBody, ...rest } = rules[i];
+      if (rewriteBody) {
+        const rewrite: RuleResponseRewrite =
+          typeof rewriteBody === 'boolean'
+            ? { rebase: rewriteBody }
+            : {
+                rebase: { match: { contentTypes: rewriteBody } },
+              };
+        const updatedRule: Rule = {
+          ...rest,
+          response: {
+            ...rest.response,
+            rewrite: {
+              ...rewrite,
+              ...rest.response?.rewrite,
+            },
+          },
+        };
+
+        this.logger.warn(
+          {
+            deprecatedRule: rules[i],
+            updatedRule: updatedRule,
+            option: 'rewrite.rebase',
+          },
+          'The "rewriteBody" property is deprecated. Please use "response.rewrite.rebase" instead.',
+        );
+
+        rules[i] = updatedRule;
+      }
+    }
+  };
 }
