@@ -7,6 +7,17 @@
   "repository": {
     "url": "https://github.com/the-heart-rnd/http-proxy/"
   },
+  "maintainers": [
+    {
+      "name": "HitoriSensei",
+      "email": "piotr.bosak@theheart.dev"
+    },
+    {
+      "name": "viters",
+      "email": "lukasz.szczesniak@theheart.dev"
+    }
+  ],
+  "license": "Apache-2.0",
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc -b tsconfig.build.json && tsc -b tsconfig.build-esm.json",
