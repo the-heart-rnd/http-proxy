@@ -33,7 +33,7 @@ it('should be able to match services by relative paths when referer is a matchin
   );
 });
 
-it('if another rule matches the absolute path and referer is matching rule, should use the absolute path', async () => {
+it('if another rule matches the absolute path, referer should be omitted', async () => {
   const port = await getPort();
   const { proxy, onServiceCallMock } = await createTestProxy({
     rules: [
@@ -64,7 +64,7 @@ it('if another rule matches the absolute path and referer is matching rule, shou
   expect(response.status).toBe(200);
   expect(onServiceCallMock).toHaveBeenCalledTimes(1);
   expect(onServiceCallMock.mock.calls[0][0].serviceRequestUrl).toBe(
-    'http://example.com/other',
+    'http://fisher.com/other',
   );
 });
 
