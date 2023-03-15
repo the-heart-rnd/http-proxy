@@ -23,7 +23,7 @@
     "build": "npm run clean && tsc -b tsconfig.build.json && tsc -b tsconfig.build-esm.json",
     "prestart": "check-engines",
     "prepare": "ts-patch install -s",
-    "prepublishOnly": "npm run test",
+    "prepublishOnly": "npm run test && npm run build",
     "test": "jest --coverage",
     "start": "node ./dist/cjs/cli/cli.js",
     "start:dev": "ts-node src/cli/cli.ts",
