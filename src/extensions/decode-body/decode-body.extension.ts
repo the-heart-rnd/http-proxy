@@ -27,20 +27,19 @@ export class DecodeBodyExtension extends ProxyExtension {
       context.serviceResponseBody = await promisify(gunzip)(
         context.serviceResponseBody,
       );
-      context.serviceResponseHeaders.delete('content-length');
     } else if (headers.get('content-encoding') === 'br') {
       context.serviceResponseHeaders.set('content-encoding', 'identity');
       context.serviceResponseBody = Buffer.from(
         brotli(context.serviceResponseBody),
       );
-      context.serviceResponseHeaders.delete('content-length');
     } else if (headers.get('content-encoding') === 'deflate') {
       context.serviceResponseHeaders.set('content-encoding', 'identity');
       context.serviceResponseBody = await promisify(inflate)(
         context.serviceResponseBody,
       );
-      context.serviceResponseHeaders.delete('content-length');
     }
+
+    context.serviceResponseHeaders.delete('content-length');
 
     return context;
   };
