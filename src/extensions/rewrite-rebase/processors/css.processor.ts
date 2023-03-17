@@ -1,8 +1,8 @@
 import { OnModifyServiceResponseWithBody } from 'src/context.types';
 import { ParsedMediaType } from 'content-type';
-import { AbstractResponseProcessor } from 'src/extensions/rewrite-rebase/processors/abstract-response.processor';
+import { AbstractProcessor } from 'src/extensions/rewrite-rebase/processors/abstract.processor';
 
-export class CSSResponseProcessor extends AbstractResponseProcessor {
+export class CSSProcessor extends AbstractProcessor {
   process(
     context: OnModifyServiceResponseWithBody,
     contentType: ParsedMediaType,

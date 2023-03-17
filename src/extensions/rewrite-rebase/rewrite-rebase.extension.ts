@@ -5,22 +5,19 @@ import {
   OnModifyServiceResponseWithBody,
 } from 'src/context.types';
 import { parse, ParsedMediaType } from 'content-type';
-import { AbstractResponseProcessor } from 'src/extensions/rewrite-rebase/processors/abstract-response.processor';
-import { HTMLResponseProcessor } from 'src/extensions/rewrite-rebase/processors/html-response.processor';
-import { TextResponseProcessor } from 'src/extensions/rewrite-rebase/processors/text-response.processor';
-import { CSSResponseProcessor } from 'src/extensions/rewrite-rebase/processors/css-response.processor';
+import { AbstractProcessor } from 'src/extensions/rewrite-rebase/processors/abstract.processor';
+import { HTMLProcessor } from 'src/extensions/rewrite-rebase/processors/html.processor';
+import { TextProcessor } from 'src/extensions/rewrite-rebase/processors/text.processor';
+import { CSSProcessor } from 'src/extensions/rewrite-rebase/processors/css.processor';
 
 export class RewriteRebaseExtension extends ProxyExtension {
   static dependencies = [
     DecodeBodyExtension,
-    HTMLResponseProcessor,
-    TextResponseProcessor,
-    CSSResponseProcessor,
+    HTMLProcessor,
+    TextProcessor,
+    CSSProcessor,
   ];
-  private contentTypeToProcessorMap = new Map<
-    string,
-    AbstractResponseProcessor
-  >();
+  private contentTypeToProcessorMap = new Map<string, AbstractProcessor>();
 
   async init(): Promise<void> {
     this.app.onStart
@@ -35,17 +32,16 @@ export class RewriteRebaseExtension extends ProxyExtension {
 
     this.contentTypeToProcessorMap.set(
       'text/html',
-      this.app.get(HTMLResponseProcessor),
+      this.app.get(HTMLProcessor),
     );
 
-    this.contentTypeToProcessorMap.set(
-      'text/css',
-      this.app.get(CSSResponseProcessor),
-    );
+    this.contentTypeToProcessorMap.set('text/css', this.app.get(CSSProcessor));
+
+    this.contentTypeToProcessorMap.set('text/*', this.app.get(TextProcessor));
 
     this.contentTypeToProcessorMap.set(
-      'text/*',
-      this.app.get(TextResponseProcessor),
+      'application/*',
+      this.app.get(TextProcessor),
     );
   }
 

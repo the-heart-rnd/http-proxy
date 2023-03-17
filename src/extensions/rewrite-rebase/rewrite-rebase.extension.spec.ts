@@ -177,4 +177,100 @@ body {
       }
     });
   }
+
+  it('should replace all links to matched service with links to proxy in application/json response', async () => {
+    const port = await getPort();
+    const { proxy, onServiceCallMock } = await createTestProxy({
+      rules: [
+        {
+          target: `http://mocked.com`,
+          match: {
+            path: '/proxy',
+          },
+          response: {
+            rewrite: { rebase: true },
+          },
+        },
+      ],
+      http: { port: port, host: 'localhost' },
+    });
+    proxy.use(InputHttpExtension);
+    proxy.use(RewriteRebaseExtension);
+    await proxy.start();
+
+    onServiceCallMock.mockImplementationOnce(
+      (context: OnServiceCall): OnPostServiceCall => {
+        return {
+          ...context,
+          serviceResponseHasBody: true,
+          serviceResponseStatusCode: 200,
+          serviceResponseHeaders: HeadersMap.from({
+            'content-type': 'application/json',
+          }),
+          serviceResponseBody: Buffer.from(
+            JSON.stringify({
+              status: 'ok',
+              url: 'http://mocked.com/some/path',
+            }),
+          ),
+        };
+      },
+    );
+
+    const response = await axios.get(`http://localhost:${port}/proxy`);
+    expect(response.data).toStrictEqual({
+      status: 'ok',
+      url: `http://localhost:${port}/proxy/some/path`,
+    });
+  });
+
+  it('should replace all links to matched service with links to proxy in application/xml response', async () => {
+    const port = await getPort();
+    const { proxy, onServiceCallMock } = await createTestProxy({
+      rules: [
+        {
+          target: `http://mocked.com`,
+          match: {
+            path: '/proxy',
+          },
+          response: {
+            rewrite: { rebase: true },
+          },
+        },
+      ],
+      http: { port: port, host: 'localhost' },
+    });
+    proxy.use(InputHttpExtension);
+    proxy.use(RewriteRebaseExtension);
+    await proxy.start();
+
+    onServiceCallMock.mockImplementationOnce(
+      (context: OnServiceCall): OnPostServiceCall => {
+        return {
+          ...context,
+          serviceResponseHasBody: true,
+          serviceResponseStatusCode: 200,
+          serviceResponseHeaders: HeadersMap.from({
+            'content-type': 'application/json',
+          }),
+          serviceResponseBody: Buffer.from(
+            `<note>
+<to>Tove</to>
+<from>Jani</from>
+<heading>Reminder</heading>
+<url>http://mocked.com/some/path</url>
+</note>`,
+          ),
+        };
+      },
+    );
+
+    const response = await axios.get(`http://localhost:${port}/proxy`);
+    expect(response.data).toBe(`<note>
+<to>Tove</to>
+<from>Jani</from>
+<heading>Reminder</heading>
+<url>http://localhost:${port}/proxy/some/path</url>
+</note>`);
+  });
 });
