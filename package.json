@@ -1,6 +1,6 @@
 {
   "name": "@thrnd/http-proxy",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "main": "./dist/cjs/proxy-framework.app.js",
   "module": "./dist/esm/proxy-framework.app.js",
   "bin": "./dist/cjs/cli/cli.js",
