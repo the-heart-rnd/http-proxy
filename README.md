@@ -1,12 +1,13 @@
 # @thrnd/http-proxy
 
-`@thrnd/http-proxy` will help you when you need to route external services under different paths under single domain.
+`@thrnd/http-proxy` is a proxy service intended for supporting local development. It allows you to quickly
+define rules that you need to properly run and develop your local services and properly accessing the remote services.
 
 Example use cases:
 
-- rewrite cookies set by target service to proxy host (you can disable this feature by setting 'rewriteCookies' to `false` in rewrite record in config file)
-- rewrite location headers set by target service to proxy host (you can disable this feature by setting 'rewriteRedirect' to `false` in rewrite record in config file)
-- rewrite urls in html body (you can enable this feature by setting `rewriteBody` to `true` in rewrite record in config file)
+- rewrite cookies set by the origin service;
+- rewrite location headers set by the origin service;
+- rewrite urls in responses from the origin service.
 
 ## Usage
 
