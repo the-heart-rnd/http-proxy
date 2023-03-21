@@ -29,7 +29,7 @@ export class HTMLProcessor extends AbstractProcessor {
       return serviceResponseBody;
     }
 
-    const tagToInsert = `<base href="${context.match.match?.path}">`;
+    const tagToInsert = `<base href="${serviceBasePath.replace(/\/?$/, '/')}">`;
 
     const contents = serviceResponseBody.toString(
       contentType.parameters['charset'] as BufferEncoding | undefined,

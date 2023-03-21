@@ -130,7 +130,7 @@ describe('RewriteRebaseExtension', () => {
       response = await axios.get(`http://localhost:${port}/proxy`);
       expect(response.data).toBe(
         `<html lang="en">
-<head lang="en"><base href="/proxy">
+<head lang="en"><base href="/proxy/">
     <meta charset="UTF-8">
     <title>Some title</title>
     </head>
