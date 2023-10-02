@@ -54,7 +54,7 @@ export class RewriteCookieExtension extends ProxyExtension {
     return cookie.replaceAll(toReplace, `Domain=${rewriteHost}`);
   }
 
-  domainMatches(domain: string, host: string): boolean {
+  private domainMatches(domain: string, host: string): boolean {
     // .sth.com matches sth.com
     // sth.com matches sth.com
     // sth.com does not match nonsth.com
